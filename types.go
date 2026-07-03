@@ -1,4 +1,4 @@
-package jobRegistry
+package registry
 
 import (
 	"sync"
@@ -13,12 +13,9 @@ type StatusUpdate struct {
 }
 
 type Registry struct {
-	mutex        sync.RWMutex
-	jobs         map[uuid.UUID]*Job
-	register     chan *Job
-	unregister   chan uuid.UUID
-	scheduler    *cron.Cron
-	statusUpdate chan StatusUpdate
+	mutex     sync.RWMutex
+	jobs      map[uuid.UUID]*Job
+	scheduler *cron.Cron
 }
 
 type Job struct {
