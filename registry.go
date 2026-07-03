@@ -10,30 +10,35 @@ import (
 
 var registry *Registry
 
-func New() {
+func New() *Registry {
 	r := &Registry{
-		jobs:       make(map[uuid.UUID]*Job),
-		register:   make(chan *Job),
-		unregister: make(chan uuid.UUID),
-		scheduler:  cron.New(),
-		broadcast:  make(chan []byte),
+		jobs:         make(map[uuid.UUID]*Job),
+		register:     make(chan *Job),
+		unregister:   make(chan uuid.UUID),
+		scheduler:    cron.New(),
+		statusUpdate: make(chan StatusUpdate),
 	}
 
 	go r.run()
 	r.scheduler.Start()
+
+	return r
+}
+
+func Init() {
+	registry = New()
 }
 
 func (r *Registry) run() {
 	for {
 		select {
 		case job := <-r.register:
-			r.muJobs.Lock()
-			defer r.muJobs.Unlock()
+			r.mutex.Lock()
 			r.jobs[job.ID] = job
 
 			parsedDuration, err := time.ParseDuration(job.Schedule)
 			if err != nil {
-				message := fmt.Sprintf("[Error] Parsing job Schedul: %s", err)
+				message := fmt.Sprintf("[Error] Parsing job Schedule: %s", err)
 				fmt.Println(message)
 				continue
 			}
@@ -45,46 +50,29 @@ func (r *Registry) run() {
 				fmt.Println(message)
 				continue
 			}
-
 			job.ScheduleId = scheduleId
+			r.mutex.Unlock()
 		case jobId := <-r.unregister:
-			r.muJobs.Lock()
-			defer r.muJobs.Unlock()
+			r.mutex.Lock()
 			job, ok := r.jobs[jobId]
-			if !ok {
-				message := fmt.Sprintf("[Warn] job with id: %s was not found inside the Registry", jobId)
-				fmt.Println(message)
-				continue
+			if ok {
+				delete(r.jobs, jobId)
 			}
-			delete(r.jobs, jobId)
-			r.scheduler.Remove(job.ScheduleId)
+
+			r.mutex.Unlock()
+
+			if ok {
+				r.scheduler.Remove(job.ScheduleId)
+			}
+		case status := <-r.statusUpdate:
+			r.mutex.Lock()
+
+			job, ok := r.jobs[status.JobId]
+			if ok {
+				job.Status = status.Status
+			}
+
+			r.mutex.Unlock()
 		}
 	}
-}
-
-func GetById(id uuid.UUID) (Job, error) {
-	registry.muJobs.RLocker()
-	defer registry.muJobs.RUnlock()
-
-	job, ok := registry.jobs[id]
-	if !ok {
-		errorMessage := fmt.Errorf("[Warn] job with id: %s was not found inside the Registry", id)
-		return Job{}, errorMessage
-	}
-	return *job, nil
-}
-
-func GetAll() []Job {
-	registry.muJobs.RLocker()
-	defer registry.muJobs.RUnlock()
-
-	jobs := make([]Job, len(registry.jobs))
-
-	i := 0
-	for _, job := range registry.jobs {
-		jobs[i] = *job
-		i++
-	}
-
-	return jobs
 }

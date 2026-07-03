@@ -7,17 +7,18 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-type Entry struct {
-	Job    Job
-	CronId uuid.UUID
+type StatusUpdate struct {
+	JobId  uuid.UUID
+	Status string
 }
+
 type Registry struct {
-	muJobs     sync.RWMutex
-	jobs       map[uuid.UUID]*Job
-	register   chan *Job
-	unregister chan uuid.UUID
-	scheduler  *cron.Cron
-	broadcast  chan []byte
+	mutex        sync.RWMutex
+	jobs         map[uuid.UUID]*Job
+	register     chan *Job
+	unregister   chan uuid.UUID
+	scheduler    *cron.Cron
+	statusUpdate chan StatusUpdate
 }
 
 type Job struct {
@@ -26,6 +27,7 @@ type Job struct {
 	Description string
 	Schedule    string
 	Func        func()
+	Status      string
 
 	ScheduleId cron.EntryID
 }
