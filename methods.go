@@ -14,8 +14,7 @@ func (r *Registry) Job(id uuid.UUID) (Job, error) {
 
 	job, ok := r.jobs[id]
 	if !ok {
-		errorMessage := fmt.Errorf("[Warn] job with id: %s was not found inside the Registry", id)
-		return Job{}, errorMessage
+		return Job{}, fmt.Errorf("[Warn] job with id: %s was not found inside the Registry", id)
 	}
 	return *job, nil
 }
@@ -85,4 +84,29 @@ func (r *Registry) Run(id uuid.UUID) error {
 
 func (r *Registry) statusUpdate(status StatusUpdate) error {
 	return nil
+}
+
+func (r *Registry) LastRun(id uuid.UUID) (time.Time, error) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	job, ok := r.jobs[id]
+	if !ok {
+		return time.Now(), fmt.Errorf("[Warn] job with id: %s was not found inside the Registry", id)
+	}
+
+	lastRun := r.scheduler.Entry(job.ScheduleId).Prev.UTC()
+	return lastRun, nil
+}
+func (r *Registry) NextRun(id uuid.UUID) (time.Time, error) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	job, ok := r.jobs[id]
+	if !ok {
+		return time.Now(), fmt.Errorf("[Warn] job with id: %s was not found inside the Registry", id)
+	}
+
+	lastRun := r.scheduler.Entry(job.ScheduleId).Next.UTC()
+	return lastRun, nil
 }
