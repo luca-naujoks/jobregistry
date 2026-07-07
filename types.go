@@ -19,7 +19,7 @@ type Registry struct {
 }
 
 type Job struct {
-	ID          uuid.UUID
+	Id          uuid.UUID
 	Title       string
 	Description string
 	Schedule    string

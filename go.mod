@@ -1,4 +1,4 @@
-module github.com/luca-naujoks/jobRegistry
+module github.com/luca-naujoks/jobregistry
 
 go 1.26.2
 

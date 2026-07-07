@@ -1,44 +1,58 @@
 # JobRegistry
 
-A Go module for managing and registering jobs.
+A Go module for registering and managing jobs.
 
-## Overview
-
-`JobRegistry` provides a structured way to register, manage, and execute jobs within your Go applications.
+`JobRegistry` provides a structured way to register, manage, and execute jobs within your Go applications. The Registry keeps track and manages your jobs while the [robfig/cron/v3](https://github.com/robfig/cron) package is handling the Execution on Time.
 
 ## Getting Started
 
 To use this module in your Go project:
 
 ```bash
-go get github.com/luca-naujoks/jobRegistry
+go get github.com/luca-naujoks/jobregistry
 ```
 
 ## Usage
 
 Import the package into your Go code:
 
-```text
-import "github.com/luca-naujoks/jobRegistry"
+ ### 1. Create a registry
+
+```go
+r := registry.New()
 ```
 
-_(Note: Depending on how your internal package structure is exposed, you may need to adjust the import path
-if `jobRegistry` is not intended to be a direct import.)_
+### 2. Define a job
 
-## Development
-
-- **Language:** Go 1.26.2
-- **Module:** `github.com/luca-naujoks/jobRegistry`
-
-### Running Tests
-
-To verify the installation and run the existing tests, execute:
-
-```bash
-go test .
+```go
+jobUUID := uuid.New()
+testJob := registry.Job{
+    ID:          jobUUID,
+    Title:       "Test Job",
+    Description: "Test Job Description",
+    Schedule:    "5s",
+    Func:        nil,
+    Status:      "",
+    ScheduleId:  0,
+}
 ```
 
-## Project Structure
+### 3. Register the job
 
-- `jobRegistry/`: Core logic containing the registry implementation and job types.
-- `go.mod`: Module definition.
+```go
+err := r.Register(testJob)
+if err != nil {
+    return
+}
+```
+
+### 4. Read the last run time
+
+```go
+jobNextRun, err := r.LastRun(jobUUID)
+if err != nil {
+    return
+}
+
+fmt.Println(jobNextRun.Format("2006-01-02 15:04"))
+```
