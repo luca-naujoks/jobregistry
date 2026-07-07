@@ -1,4 +1,5 @@
 # JobRegistry
+[![Go Reference](https://pkg.go.dev/badge/github.com/luca-naujoks/jobRegistry.svg)](https://pkg.go.dev/github.com/luca-naujoks/jobRegistry)
 
 A Go module for registering and managing jobs.
 
